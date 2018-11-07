@@ -8,6 +8,9 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.thinkpad.myapplication.listener.ProgressListener;
+import com.example.thinkpad.myapplication.other.ProgressRequestBody;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.FileNameMap;
@@ -76,40 +79,42 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void upImage() {
-         // 文件
-//        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-//                + File.separator + "bell.png");
 
-         // 创建 OkHttpClient
+         // 1.创建 OkHttpClient
         OkHttpClient mOkHttpClent = new OkHttpClient();
 
-         // 创建 RequestBody
+         // 2.创建 RequestBody
         MultipartBody.Builder builder = new MultipartBody.Builder();
         for (int i = 0; i < fileNames.size(); i++) { //对文件进行遍历
             File file = new File(fileNames.get(i)); //生成文件
             //根据文件的后缀名，获得文件类型
             String fileType = getMimeType(file.getName());
             builder.addFormDataPart( //给Builder添加上传的文件
-                    "image",  //请求的名字
+                    "image",  //请求的名字，这个要和服务器预定？？
                     file.getName(), //文件的文字，服务器端用来解析的
-                    RequestBody.create(MediaType.parse(fileType),
-                    file) //创建RequestBody，把上传的文件放入
+                    RequestBody.create(MediaType.parse(fileType),file) //创建RequestBody，把上传的文件放入
             );
         }
-//        MultipartBody.Builder builder = new MultipartBody.Builder()
-//                .setType(MultipartBody.FORM)
-//                .addFormDataPart("img",
-//                        "bell.png",
-//                        RequestBody.create(MediaType.parse("image/png"), file));
         RequestBody requestBody = builder.build();
 
-         // 创建 Request
+         // 3.创建 Request
         Request request = new Request.Builder()
                 .url(url)
-                .post(requestBody)
+                .post(new ProgressRequestBody(requestBody, new ProgressListener() {
+                    @Override
+                    public void onProgress(long currentBytes, long contentLength, boolean done) {
+                        Log.e("chris", "currentBytes:" + currentBytes);
+                        Log.e("chris", "contentLength" + contentLength);
+                        Log.e("chris", (100 * currentBytes) / contentLength + " % done ");
+                        Log.e("chris", "done:" + done);
+                        Log.e("chris", "================================");
+                        //当前上传的进度值
+                        int progress = (int) ((100 * currentBytes) / contentLength);
+                    }
+                }))
                 .build();
 
-         // 发起请求
+         // 4.发起请求
         Call call = mOkHttpClent.newCall(request);
         call.enqueue(new Callback() {
             @Override
